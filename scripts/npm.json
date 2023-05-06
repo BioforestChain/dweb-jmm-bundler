@@ -1,0 +1,8 @@
+{
+  "name": "@bfex/bundle",
+  "mainExports": ".",
+  "buildFromRootDir": "./src",
+  "buildToRootDir": "./build",
+  "version": "0.0.1",
+  "description": ".bfsa application bundle service."
+}
