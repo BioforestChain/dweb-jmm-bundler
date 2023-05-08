@@ -1,7 +1,3 @@
-import * as process from "node_process";
-import * as mod from "std_path";
-
-export const path = process.platform === "win32" ? mod.win32 : mod.posix;
 
 /**
  * ## slash
@@ -10,6 +6,7 @@ export const path = process.platform === "win32" ? mod.win32 : mod.posix;
  */
 export function slash(path: string) {
   const isExtendedLengthPath = /^\\\\\?\\/.test(path);
+  // deno-lint-ignore no-control-regex
   const hasNonAscii = /[^\u0000-\u0080]+/.test(path); // eslint-disable-line no-control-regex
 
   if (isExtendedLengthPath || hasNonAscii) {

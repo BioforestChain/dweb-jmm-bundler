@@ -1,10 +1,7 @@
-import * as process from "node_process";
-import { Command } from "commander";
-import { bundle } from "cmd_bundle";
-import { bundleProblemsFlow } from "problem";
-import { checkSign, genBfsAppId } from "check";
-import npmConfig from "../npm.json" assert { type: "json" };
+import { Command, path } from "../../deps.ts";
+import npmConfig from "../../scripts/npm.json" assert { type: "json" };
 import { cmdOptions } from '../types/cmd.type.ts';
+import { bundleProblemsFlow } from "../utils/problem.ts";
 
 const program = new Command();
 program
@@ -24,28 +21,7 @@ program
     "bfsAppId: app unique identification，new app ignore."
   )
   .action(async (options: cmdOptions) => {
-    /**
-     * bfsAppId存在，则校验，否则生成
-     */
-    let bfsAppId = "";
-    if (options.bfsAppId) {
-      // 校验bfsAppId是否合法
-      const suc = await checkSign(options.bfsAppId);
-
-      if (!suc) {
-        throw new Error("bfsAppId不合法，请输入正确的bfsAppId");
-      }
-
-      bfsAppId = options.bfsAppId;
-    } else {
-      bfsAppId = await genBfsAppId();
-    }
-
-    await bundle({
-      bfsAppId: bfsAppId,
-      frontPath: options.frontPath,
-      backPath: options.backPath,
-    });
+    
   });
 
 // 使用交互模式
@@ -54,7 +30,13 @@ program
   .description("bfsa bundle project to .bfsa by interactive command line")
   .action(async () => {
     const problemConfig = await bundleProblemsFlow();
-    await bundle(problemConfig);
+    // await bundle(problemConfig);
   });
 
-program.parse(process.argv);
+  const argv = [
+    Deno.execPath(),
+    path.fromFileUrl(Deno.mainModule),
+    ...Deno.args,
+ ]
+
+program.parse(argv);

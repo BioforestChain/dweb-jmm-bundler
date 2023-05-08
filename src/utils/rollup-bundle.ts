@@ -1,6 +1,4 @@
-import { rollup } from "rollup";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import { path } from "path";
+import { nodeResolve, path, rollup } from "../../deps.ts";
 
 /**
  * 编译后端项目到单文件，将依赖打包进源码，避免依赖node_modules
@@ -25,28 +23,4 @@ export async function build(options: {
   });
 
   return `sys/backend-${bfsAppId}/index.js`;
-}
-
-/**
- * 编译serviceWorker
- * @returns
- */
-export async function buildSw(cwd: string, dest: string) {
-  const entryFile = path.resolve(
-    cwd,
-    "../../node_modules/@bfsx/sw/esm/sw/serviceWorker.js"
-  );
-
-  const bundle = await rollup({
-    input: entryFile,
-    plugins: [nodeResolve()],
-  });
-
-  const outputFile = path.join(dest, "./serviceWorker.js");
-
-  await bundle.write({
-    file: outputFile,
-  });
-
-  return;
 }
