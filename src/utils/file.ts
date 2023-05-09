@@ -72,7 +72,6 @@ export async function searchFile(
         }
       }
     }
-
     return;
   }
 

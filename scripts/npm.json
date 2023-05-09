@@ -4,5 +4,9 @@
   "buildFromRootDir": "./src",
   "buildToRootDir": "./build",
   "version": "0.0.1",
-  "description": ".bfsa application bundle service."
+  "description": ".bfsa application bundle service.",
+  "lib": [
+    "es2022",
+    "dom"
+  ]
 }

@@ -1,4 +1,4 @@
-import { fs, inquirer, path } from "../../deps.ts";
+import { fs, prompt,Checkbox,Input, path } from "../../deps.ts";
 
 const { existsSync } = fs;
 
@@ -7,29 +7,17 @@ const { existsSync } = fs;
  * @returns
  */
 export async function bundleProblemsFlow() {
-  const selectAnswer = await inquirer.prompt([
+  const selectAnswer = await prompt([
     {
-      type: "list",
-      name: "appType",
-      message: "请选择APP类型",
-      default: 0,
-      choices: [
-        {
-          key: "GUI",
-          name: "图形化APP",
-          value: 0,
-        },
-        {
-          key: "TUI",
-          name: "终端APP",
-          value: 1,
-        },
-      ],
+      type: Checkbox,
+      name: "options",
+      message: "请选择创建类型",
+      options:["直接读取我创建的配置文件","手动输入"],
     },
   ]);
 
   let frontPath = "";
-  if (selectAnswer.appType === 0) {
+  if (selectAnswer.options) {
     frontPath = await promptInputFrontPath();
   }
 
@@ -48,9 +36,9 @@ export async function bundleProblemsFlow() {
 async function promptInputFrontPath() {
   let frontPath = "";
   do {
-    const frontAnswer = await inquirer.prompt([
+    const frontAnswer = await prompt([
       {
-        type: "input",
+        type: Input,
         name: "frontPath",
         message: `请输入前端项目地址: `,
       },

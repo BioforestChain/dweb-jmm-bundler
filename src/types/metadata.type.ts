@@ -5,7 +5,7 @@ export interface $IAppversion {
     version: string;
     icon: string;
     name: string;
-    files: File[];
+    files: [];
     releaseNotes: string;
     releaseName: string;
     releaseDate: string;

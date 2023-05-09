@@ -1,4 +1,4 @@
-import { EntryPoint, build, emptyDir, type BuildOptions } from "https://deno.land/x/dnt@0.31.0/mod.ts";
+import { EntryPoint, LibName, build, emptyDir, type BuildOptions } from "https://deno.land/x/dnt@0.34.0/mod.ts";
 import npmConfig from "./npm.json" assert { type: "json" };
 
 const entryPoints: EntryPoint[] = [];
@@ -18,14 +18,16 @@ export const buildOptions: BuildOptions = {
   typeCheck: true,
   scriptModule: false,
   shims: {
-    deno: "dev",
+    deno: true,
+    blob:true
   },
   compilerOptions: {
-    target: "Latest",
+    target: "ES2020",
     importHelpers: true,
-    // isolatedModules: false,
+    emitDecoratorMetadata: true,
+    lib: npmConfig.lib as LibName[],
   },
-  packageManager: "yarn",
+  packageManager: "npm",
   package: {
     name: npmConfig.name,
     version: npmConfig.version,
@@ -41,14 +43,13 @@ export const buildOptions: BuildOptions = {
     devDependencies: {
       // "@types/node": "latest",
       "@types/tar": "^6.1.3",
-      "@types/inquirer": "^9.0.2",
     },
   },
 };
 
 if (import.meta.main) {
-  emptyDir(npmConfig.buildFromRootDir);
+  emptyDir(npmConfig.buildToRootDir);
   await build(buildOptions);
-  await Deno.copyFile("./LICENSE", "./.npm/LICENSE");
-  await Deno.copyFile("./README.md", "./.npm/README.md");
+  await Deno.copyFile("./LICENSE", `${npmConfig.buildToRootDir}/LICENSE`);
+  await Deno.copyFile("./README.md", `${npmConfig.buildToRootDir}/README.md`);
 }
