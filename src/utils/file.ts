@@ -1,17 +1,11 @@
-
-import { JsonStringifyStream, fs, path, readableStreamFromIterable } from "../../deps.ts";
+import { fs, path } from "../../deps.ts";
 import { $BFSMetaData } from "../types/metadata.type.ts";
-const { existsSync }  = fs;
 
-
-export async function createFile(fileName:string,obj:$BFSMetaData){
+export async function createFile(fileName: string, obj: $BFSMetaData) {
   const file = await Deno.open(fileName, { create: true, write: true });
 
-readableStreamFromIterable([obj])
-  .pipeThrough(new JsonStringifyStream()) // convert to JSON lines (ndjson)
-  .pipeThrough(new TextEncoderStream()) // convert a string to a Uint8Array
-  .pipeTo(file.writable)
-  .then(() => console.log("write success"));
+  await file.write(new TextEncoder().encode(JSON.stringify(obj)));
+  file.close();
 }
 
 /**
@@ -27,9 +21,8 @@ export async function createBfsaDir(bfsAppId: string): Promise<string> {
   try {
     const destPath = path.join(root, bfsAppId);
 
-    if (existsSync(destPath)) {
-      await Deno.remove(destPath, { recursive: true });
-    }
+    await fs.emptyDir(destPath);
+
     const mkdir = Deno.mkdir;
     // 创建bfsAppId目录
     await mkdir(destPath, { recursive: true });
@@ -86,9 +79,7 @@ export async function searchFile(
 export async function copyDir(src: string, dest: string) {
   const entries = Deno.readDir(src);
 
-  if (!existsSync(dest)) {
-    await Deno.mkdir(dest);
-  }
+  await fs.ensureDir(dest);
 
   for await (const entry of entries) {
     const srcPath = path.join(src, entry.name!);

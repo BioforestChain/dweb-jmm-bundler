@@ -46,7 +46,7 @@ export async function bundle(options: IProblemConfig) {
   metadata.releaseDate = appStatus.mtime;
   
   // 生成bfs-metadata.json
-  createFile("./bfs-metadata.json",metadata)
+  createFile("bfs-metadata.json",metadata)
 
   console.log("bundle bfsa application done!!!");
 }
