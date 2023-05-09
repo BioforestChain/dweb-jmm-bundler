@@ -1,3 +1,4 @@
 export interface cmdOptions {
-  bfsAppId: string
+  path: string;
+  frontPath:string;
 }

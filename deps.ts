@@ -1,6 +1,8 @@
 //  export * from "https://deno.land/std@0.165.0/node/internal/buffer";
 
-export * as crypto from "https://deno.land/std@0.185.0/crypto/mod.ts";
+export { crypto,toHashString } from "https://deno.land/std@0.186.0/crypto/mod.ts";
+export { readableStreamFromIterable } from "https://deno.land/std@0.186.0/streams/readable_stream_from_iterable.ts";
+export { JsonStringifyStream } from "https://deno.land/std@0.186.0/json/json_stringify_stream.ts";
 export * as fs from "https://deno.land/std@0.185.0/fs/mod.ts";
 export * as path from "https://deno.land/std@0.185.0/path/mod.ts";
 export { Buffer } from "https://deno.land/std@0.186.0/streams/mod.ts";

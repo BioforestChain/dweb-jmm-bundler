@@ -1,14 +1,18 @@
 export const doPub = async (cwd: string) => {
-  const p = Deno.run({
+  const command = new Deno.Command("npm publish --access public", {
     cwd,
-    cmd: ["npm", "publish", "--access", "public"],
     stdout: "inherit",
     stderr: "inherit",
     stdin: "inherit",
   });
-  const status = await p.status();
-  p.close();
-  console.log(status);
+  const child = command.spawn();
+
+  // open a file and pipe the subprocess output to it.
+  child.stdout.pipeTo(Deno.openSync("output").writable);
+
+  // manually close stdin
+  child.stdin.close();
+  const status = await child.status;
   return status.success;
 };
 

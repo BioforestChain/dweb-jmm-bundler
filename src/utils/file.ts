@@ -1,7 +1,18 @@
 
-import { fs, path } from "../../deps.ts";
+import { JsonStringifyStream, fs, path, readableStreamFromIterable } from "../../deps.ts";
+import { $BFSMetaData } from "../types/metadata.type.ts";
 const { existsSync }  = fs;
 
+
+export async function createFile(fileName:string,obj:$BFSMetaData){
+  const file = await Deno.open(fileName, { create: true, write: true });
+
+readableStreamFromIterable([obj])
+  .pipeThrough(new JsonStringifyStream()) // convert to JSON lines (ndjson)
+  .pipeThrough(new TextEncoderStream()) // convert a string to a Uint8Array
+  .pipeTo(file.writable)
+  .then(() => console.log("write success"));
+}
 
 /**
  * 创建打包目录
@@ -56,7 +67,7 @@ export async function searchFile(
         if (nameReg.test(entry.name!) && entry.isFile) {
           searchPath = filePath;
           break;
-        } else if (entry.isDirectory) {
+        } else if (entry.isDirectory && entry.name === "node_modules") {
           await loopSearchFile(filePath, nameReg);
         }
       }

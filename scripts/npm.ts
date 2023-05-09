@@ -1,4 +1,4 @@
-import { build, emptyDir, EntryPoint, LibName, type BuildOptions } from "https://deno.land/x/dnt@0.31.0/mod.ts";
+import { EntryPoint, build, emptyDir, type BuildOptions } from "https://deno.land/x/dnt@0.31.0/mod.ts";
 import npmConfig from "./npm.json" assert { type: "json" };
 
 const entryPoints: EntryPoint[] = [];
@@ -13,13 +13,6 @@ entryPoints.push({
 });
 
 export const buildOptions: BuildOptions = {
-  entryPoints: [
-    {
-      kind: "bin",
-      name: "bfex",
-      path: "./bin/bfsa.cmd.ts",
-    },
-  ],
   entryPoints: entryPoints,
   outDir: npmConfig.buildToRootDir,
   typeCheck: true,
@@ -54,7 +47,7 @@ export const buildOptions: BuildOptions = {
 };
 
 if (import.meta.main) {
-  emptyDir("./.npm");
+  emptyDir(npmConfig.buildFromRootDir);
   await build(buildOptions);
   await Deno.copyFile("./LICENSE", "./.npm/LICENSE");
   await Deno.copyFile("./README.md", "./.npm/README.md");

@@ -1,19 +1,19 @@
 import { path } from "../../deps.ts";
-import { compressToSuffixesBfsa } from "../utils/compress.ts";
-
-import { BFSMetaData } from "../types/metadata.type.ts";
+import { $BFSMetaData, $UserMetadata } from "../types/metadata.type.ts";
 import type { IProblemConfig } from "../types/problem.type.ts";
-import { copyDir, createBfsaDir } from "../utils/file.ts";
+import { compressToSuffixesBfsa } from "../utils/compress.ts";
+import { copyDir, createBfsaDir, createFile, searchFile } from "../utils/file.ts";
 import { appendForwardSlash } from "../utils/path.ts";
-
 
 /**
  * 打包入口
  * @param options
  */
 export async function bundle(options: IProblemConfig) {
-  const { manifest } = options;
-  const bfsAppId = `${manifest.name}.${manifest.host}.dweb`
+  const { metaPath } = options;
+  const metadata = await createBfsaMetaData(metaPath);
+
+  const bfsAppId = metadata.id
 
   const destPath = await createBfsaDir(bfsAppId);
 
@@ -29,97 +29,119 @@ export async function bundle(options: IProblemConfig) {
   // const backPath = appendForwardSlash(
   //   path.resolve(Deno.cwd(), options.backPath)
   // );
-  const metadata =  createBfsaMetaData();
-  // 配置文件写入boot目录
-  const bootPath = path.join(destPath, "boot");
-  await writeConfigJson(bootPath, metadata);
+
+  //TODO 配置文件写入boot目录
+  // const bootPath = path.join(destPath, "boot");
+  // await writeConfigJson(bootPath, metadata);
 
   // 对文件进行压缩
-  await compressToSuffixesBfsa(destPath, bfsAppId);
+  const appPath = await compressToSuffixesBfsa(destPath, bfsAppId);
 
-  // 压缩完成，删除目录
+    // 压缩完成，删除目录
   await Deno.remove(destPath, { recursive: true });
 
+  const appStatus = await Deno.stat(appPath);
+  // 添加一些需要编译完才能拿到的属性
+  metadata.size = appStatus.size;
+  metadata.releaseDate = appStatus.mtime;
+  
   // 生成bfs-metadata.json
-
+  createFile("./bfs-metadata.json",metadata)
 
   console.log("bundle bfsa application done!!!");
 }
-
-
-
 
 /**
  * 获取bfsa-metadata.json文件的数据
  * @param bootPath boot目录
  * @returns
  */
- function createBfsaMetaData(
-) {
-  const root = Deno.cwd();
+async function createBfsaMetaData(metaPath?:string) {
+  const bfsMetaPath = await searchMetadata(metaPath);
 
-
-
-  const _metadata: BFSMetaData = {
-    id: "",
+  const bfsMetaU8 = await Deno.readFile(bfsMetaPath);
+  const bfsMeta:$UserMetadata = JSON.parse(bfsMetaU8.toString())
+  const bfsUrl= new URL(bfsMeta.home)
+  
+  const _metadata: $BFSMetaData = {
+    id:  `${bfsMeta.name}.${bfsUrl.host}.dweb`,
     server: {
       root: "file:///bundle",
-      entry: "/cotDemo.worker.js" // 后端未开放先固定
+      entry: "/cotDemo.worker.js", // 后端未开放先固定
     },
-    title: "",
-    subtitle: "",
-    icon: "",
-    downloadUrl: "",
-    images: [],
-    introduction: "",
+    title: bfsMeta.name,
+    subtitle: bfsMeta.subName,
+    icon: bfsMeta.icon,
+    downloadUrl: bfsMeta.downloadUrl,
+    images: bfsMeta.images,
+    introduction: bfsMeta.introduction,
     splashScreen: {
-      entry:""
+      entry: "",
     },
-    author: [],
-    version: "",
-    keywords: [],
-    home: "",
-    size: "",
+    author: bfsMeta.author,
+    version: bfsMeta.version,
+    keywords: bfsMeta.keywords,
+    home: bfsMeta.home,
+    size: 0,
     fileHash: "",
     plugins: [],
-    releaseDate: "",
+    releaseDate: null,
     staticWebServers: [],
-    openWebViewList: []
-};
+    openWebViewList: [],
+  };
   return _metadata;
 }
 
 /**
- * 在boot目录写入bfs-metadata.json和link.json
- * @param bootPath boot目录
- * @param bfsAppId 应用id
- * @param metadata bfs-metadata数据
- * @returns
+ * 适配用户传递bfs-metadata.json的情况
+ * @param metaPath bfs-metadata地址
+ * @returns 
  */
-async function writeConfigJson(
-  bootPath: string,
-  metadata: BFSMetaData
-) {
-  // bfsa-metadata.json
-
-  // // 文件列表生成校验码
-  // const destPath = path.resolve(bootPath, "../");
-  // const filesList = await fileListHash(
-  //   destPath,
-  //   bfsAppId,
-  //   [] 
-  // );
-
-  // // link.json
-  // const linkJson = await genLinkJson(bfsAppId, metadata, filesList);
-  // await writeFile(
-  //   path.join(bootPath, "link.json"),
-  //   JSON.stringify(linkJson),
-  //   "utf-8"
-  // );
-
-  // return;
+async function searchMetadata(metaPath?:string) {
+  // 如果用户没有传递，默认在命令行目录搜索
+  if (!metaPath) {
+    const root = Deno.cwd();
+    // 搜索bfs-metadata.json
+    const bfsMetaPath = await searchFile(root, /^bfs-metadata\.json$/i);
+    if (bfsMetaPath === "") throw new Error("not found bfs-metadata.json");
+    return bfsMetaPath
+  }
+  // 用户直接传递了配置文件
+  const config = await Deno.stat(metaPath);
+  if (config.isFile && metaPath.match(/^bfs-metadata\.json$/i)) {
+    return metaPath
+  } 
+   //如果用户传递的是目录 则需要帮助用户搜索bfs-metadata.json
+   const bfsMetaPath = await searchFile(metaPath, /^bfs-metadata\.json$/i);
+   if (bfsMetaPath === "") throw new Error("not found bfs-metadata.json");
+   return bfsMetaPath
 }
+
+// /**
+//  * 在boot目录写入bfs-metadata.json和link.json
+//  * @param bootPath boot目录
+//  * @param bfsAppId 应用id
+//  * @param metadata bfs-metadata数据
+//  * @returns
+//  */
+// async function writeConfigJson(bootPath: string, metadata: $BFSMetaData) {
+//   // bfsa-metadata.json
+//   // 文件列表生成校验码
+//   const destPath = path.resolve(bootPath, "../");
+//   const filesList = await fileListHash(
+//     destPath,
+//     bfsAppId,
+//     []
+//   );
+//   // link.json
+//   const linkJson = await genLinkJson(bfsAppId, metadata, filesList);
+//   await writeFile(
+//     path.join(bootPath, "link.json"),
+//     JSON.stringify(linkJson),
+//     "utf-8"
+//   );
+//   return;
+// }
 
 // /**
 //  * 生成link.json
@@ -277,4 +299,3 @@ async function writeConfigJson(
 
 //   return entryFile;
 // }
-

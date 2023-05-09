@@ -1,5 +1,6 @@
 import { Command, path } from "../../deps.ts";
 import npmConfig from "../../scripts/npm.json" assert { type: "json" };
+import { bundle } from '../cmd/bundle.ts';
 import { cmdOptions } from '../types/cmd.type.ts';
 import { bundleProblemsFlow } from "../utils/problem.ts";
 
@@ -14,14 +15,18 @@ program
   .command("bundle")
   .description("bfex bundle project to .bfsa")
   // 无界面应用必须包含后端
-  .requiredOption("-b, --back-path <string>", "backend application path.")
+  // .requiredOption("-b, --back-path <string>", "backend application path.")
   .option("-f, --front-path <string>", "frontend application path.")
   .option(
-    "-i, --bfs-appid <string>",
-    "bfsAppId: app unique identification，new app ignore."
+    "-p, --path <string>",
+    "path: configuration file bfs-metadata.json address."
   )
   .action(async (options: cmdOptions) => {
-    
+    const frontPath = options.frontPath ?? Deno.cwd();
+    await bundle({
+      frontPath:frontPath,
+      metaPath:options.path
+    })
   });
 
 // 使用交互模式
@@ -30,7 +35,7 @@ program
   .description("bfsa bundle project to .bfsa by interactive command line")
   .action(async () => {
     const problemConfig = await bundleProblemsFlow();
-    // await bundle(problemConfig);
+    await bundle(problemConfig);
   });
 
   const argv = [
@@ -39,4 +44,5 @@ program
     ...Deno.args,
  ]
 
+ console.log("deno argv=>",argv)
 program.parse(argv);

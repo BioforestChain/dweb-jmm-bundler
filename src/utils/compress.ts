@@ -9,6 +9,7 @@ export async function compressToSuffixesBfsa(dest: string, bfsAppId: string) {
   const cwd = path.resolve(dest, "../");
 
   await tar.compress(cwd,`${bfsAppId}.bfsa`,);
+  return path.resolve(cwd,`${bfsAppId}.bfsa`)
 }
 
 /**
