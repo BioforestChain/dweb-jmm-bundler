@@ -2,37 +2,38 @@ import { fs, path } from "../../deps.ts";
 import { $BFSMetaData } from "../types/metadata.type.ts";
 
 export async function createFile(fileName: string, obj: $BFSMetaData) {
-  const file = await Deno.open(fileName, { create: true, write: true });
-
-  await file.write(new TextEncoder().encode(JSON.stringify(obj)));
+  const file = await Deno.open(fileName, {
+    create: true,
+    write: true,
+    truncate: true,
+  });
+  await file.write(new TextEncoder().encode(JSON.stringify(obj, null, 2)));
   file.close();
 }
 
 /**
  * 创建打包目录
- * @param bfsAppId 应用appid，未来该数据需要从链上申请，所以格式需要保持一致：
- *                 长度为7+1（校验位）的大写英文字母或数字（链就是系统的“证书颁发机构”，
- *                 资深用户可以配置不同的的链来安装那些未知来源的应用）
- * @returns {boolean}
+ * @param bfsAppId 应用appid，必须在当前的https域名下
+ *  * @returns {boolean}
  */
-export async function createBfsaDir(bfsAppId: string): Promise<string> {
-  const root = Deno.cwd();
-
+export async function createBfsaDir(
+  destPath: string,
+  bfsAppId: string
+): Promise<string> {
   try {
-    const destPath = path.join(root, bfsAppId);
-
-    await fs.emptyDir(destPath);
+    const temporaryPath = path.join(destPath, bfsAppId);
+    await fs.emptyDir(temporaryPath);
 
     const mkdir = Deno.mkdir;
-    // 创建bfsAppId目录
-    await mkdir(destPath, { recursive: true });
-    await mkdir(path.join(destPath, "boot"));
-    await mkdir(path.join(destPath, "sys"));
-    await mkdir(path.join(destPath, "tmp"));
-    await mkdir(path.join(destPath, "home"));
-    await mkdir(path.join(destPath, "usr"));
+    // 创建bfsApp目录
+    await mkdir(temporaryPath, { recursive: true });
+    await mkdir(path.join(temporaryPath, "boot"));
+    // await mkdir(path.join(temporaryPath, "sys"));
+    await mkdir(path.join(temporaryPath, "tmp"));
+    await mkdir(path.join(temporaryPath, "home"));
+    await mkdir(path.join(temporaryPath, "usr"));
 
-    return destPath;
+    return temporaryPath;
   } catch (ex) {
     throw Error(ex.message);
   }
@@ -49,23 +50,18 @@ export async function searchFile(
   nameReg: RegExp
 ): Promise<string> {
   let searchPath = "";
-  await loopSearchFile(src, nameReg);
-
+  await catchFunctionType(loopSearchFile, src, nameReg);
   async function loopSearchFile(src: string, nameReg: RegExp) {
-    if (!searchPath) {
-      const entries = Deno.readDir(src);
-
-      for await (const entry of entries) {
-        const filePath = path.join(src, entry.name!);
-        if (nameReg.test(entry.name!) && entry.isFile) {
-          searchPath = filePath;
-          break;
-        } else if (entry.isDirectory && entry.name === "node_modules") {
-          await loopSearchFile(filePath, nameReg);
-        }
+    const entries = Deno.readDir(src);
+    for await (const entry of entries) {
+      const filePath = path.join(src, entry.name!);
+      if (nameReg.test(entry.name!) && entry.isFile) {
+        searchPath = filePath;
+        return searchPath;
+      } else if (entry.isDirectory && entry.name !== "node_modules") {
+        await loopSearchFile(filePath, nameReg);
       }
     }
-    return;
   }
 
   return searchPath;
@@ -77,21 +73,27 @@ export async function searchFile(
  * @param dest 目标目录
  */
 export async function copyDir(src: string, dest: string) {
-  const entries = Deno.readDir(src);
-
-  await fs.ensureDir(dest);
-
-  for await (const entry of entries) {
-    const srcPath = path.join(src, entry.name!);
-    const destPath = path.join(dest, entry.name!);
-
-    if (entry.isDirectory) {
-      // 排除node_modules
-      if (entry.name !== "node_modules") {
-        await copyDir(srcPath, destPath);
-      }
-    } else {
-      await Deno.copyFile(srcPath, destPath);
-    }
-  }
+  await fs.copy(src, dest,{overwrite:true});
 }
+
+/**
+ * 捕获文件不存在的错误
+ * @param fun
+ * @param args
+ * @returns
+ */
+export const catchFunctionType = async <R>(
+  // deno-lint-ignore no-explicit-any
+  fun: (...args: any) => R,
+  // deno-lint-ignore no-explicit-any
+  ...args: any
+) => {
+  try {
+    return await fun(...args);
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw `传递的文件夹不存在，请检查路径：${error.message}`;
+    }
+    throw error;
+  }
+};

@@ -1,28 +1,36 @@
-import { path } from "../../deps.ts";
+import { Input, path } from "../../deps.ts";
 import { $BFSMetaData, $UserMetadata } from "../types/metadata.type.ts";
 import type { IProblemConfig } from "../types/problem.type.ts";
 import { compressToSuffixesBfsa } from "../utils/compress.ts";
-import { copyDir, createBfsaDir, createFile, searchFile } from "../utils/file.ts";
-import { appendForwardSlash } from "../utils/path.ts";
+import {
+  catchFunctionType,
+  copyDir,
+  createBfsaDir,
+  createFile,
+  searchFile,
+} from "../utils/file.ts";
 
 /**
  * 打包入口
  * @param options
  */
 export async function bundle(options: IProblemConfig) {
-  const { metaPath } = options;
-  const metadata = await createBfsaMetaData(metaPath);
+  let { destPath,frontBuildPath } = options;
+   // 判断用户输入的是绝对地址还是相对地址
+   destPath = path.isAbsolute(destPath)
+   ? destPath
+   : path.resolve(Deno.cwd(), destPath);
+  // 在用户输入的根目录先拿到metadata.json
+  const metadata = await createBfsaMetaData(destPath);
 
-  const bfsAppId = metadata.id
+  const bfsAppId = metadata.id;
 
-  const destPath = await createBfsaDir(bfsAppId);
+  const temporaryPath = await createBfsaDir(destPath,bfsAppId);
 
   // 将前端项目移动到sys目录 (无界面应用不包含前端)
-  const sysPath = path.join(destPath, "sys");
-  let frontPath = options.frontPath;
-  if (frontPath) {
-    frontPath = appendForwardSlash(path.resolve(Deno.cwd(), frontPath));
-    await copyDir(frontPath, sysPath);
+  const sysPath = path.join(temporaryPath, "sys");
+  if (frontBuildPath) { // 如果是纯后端应用则不需要复制
+    await copyDir(frontBuildPath, sysPath);
   }
 
   // TODO 将后端项目编译到sys目录
@@ -35,18 +43,19 @@ export async function bundle(options: IProblemConfig) {
   // await writeConfigJson(bootPath, metadata);
 
   // 对文件进行压缩
-  const appPath = await compressToSuffixesBfsa(destPath, bfsAppId);
+  const appPath = await compressToSuffixesBfsa(temporaryPath, bfsAppId);
 
-    // 压缩完成，删除目录
-  await Deno.remove(destPath, { recursive: true });
+  // 压缩完成，删除目录
+  await Deno.remove(temporaryPath, { recursive: true });
 
   const appStatus = await Deno.stat(appPath);
   // 添加一些需要编译完才能拿到的属性
   metadata.size = appStatus.size;
   metadata.releaseDate = appStatus.mtime;
-  
+
   // 生成bfs-metadata.json
-  createFile("bfs-metadata.json",metadata)
+  const bfsMetaPath = path.resolve(destPath,"bfs-metadata.json");
+  createFile(bfsMetaPath, metadata);
 
   console.log("bundle bfsa application done!!!");
 }
@@ -56,15 +65,15 @@ export async function bundle(options: IProblemConfig) {
  * @param bootPath boot目录
  * @returns
  */
-async function createBfsaMetaData(metaPath?:string) {
-  const bfsMetaPath = await searchMetadata(metaPath);
+async function createBfsaMetaData(destPath: string) {
+  const bfsMetaPath = await searchMetadata(destPath);
 
-  const bfsMetaU8 = await Deno.readFile(bfsMetaPath);
-  const bfsMeta:$UserMetadata = JSON.parse(bfsMetaU8.toString())
-  const bfsUrl= new URL(bfsMeta.home)
-  
+  const bfsMetaU8 = await import(bfsMetaPath)
+  const bfsMeta: $UserMetadata = bfsMetaU8.default
+  const bfsUrl = new URL(bfsMeta.home);
+
   const _metadata: $BFSMetaData = {
-    id:  `${bfsMeta.name}.${bfsUrl.host}.dweb`,
+    id: `${bfsMeta.name}.${bfsUrl.host}.dweb`,
     server: {
       root: "file:///bundle",
       entry: "/cotDemo.worker.js", // 后端未开放先固定
@@ -95,26 +104,19 @@ async function createBfsaMetaData(metaPath?:string) {
 /**
  * 适配用户传递bfs-metadata.json的情况
  * @param metaPath bfs-metadata地址
- * @returns 
+ * @returns
  */
-async function searchMetadata(metaPath?:string) {
-  // 如果用户没有传递，默认在命令行目录搜索
-  if (!metaPath) {
-    const root = Deno.cwd();
-    // 搜索bfs-metadata.json
-    const bfsMetaPath = await searchFile(root, /^bfs-metadata\.json$/i);
-    if (bfsMetaPath === "") throw new Error("not found bfs-metadata.json");
-    return bfsMetaPath
+async function searchMetadata(destPath: string) {
+  
+  console.log("Project address=>",destPath)
+  // 搜索bfs-metadata.ts
+  const bfsMetaPath = await searchFile(destPath, /^bfs-metadata\.ts$/i);
+  if (bfsMetaPath === "") {
+    const bfsPath = await Input.prompt("没有找到配置文件地址，请输入bfs-metadata.json配置文件地址：");
+    await catchFunctionType(Deno.stat,bfsPath)
+    return bfsPath
   }
-  // 用户直接传递了配置文件
-  const config = await Deno.stat(metaPath);
-  if (config.isFile && metaPath.match(/^bfs-metadata\.json$/i)) {
-    return metaPath
-  } 
-   //如果用户传递的是目录 则需要帮助用户搜索bfs-metadata.json
-   const bfsMetaPath = await searchFile(metaPath, /^bfs-metadata\.json$/i);
-   if (bfsMetaPath === "") throw new Error("not found bfs-metadata.json");
-   return bfsMetaPath
+  return bfsMetaPath;
 }
 
 // /**

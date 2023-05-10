@@ -33,6 +33,9 @@ export const buildOptions: BuildOptions = {
     version: npmConfig.version,
     description: npmConfig.description,
     license: "MIT",
+    bin: {
+      "bfex":"./esm/src/index.js"
+    },
     repository: {
       type: "git",
       url: "git+https://github.com/BioforestChain/dweb_bundle.git",
@@ -42,7 +45,7 @@ export const buildOptions: BuildOptions = {
     },
     devDependencies: {
       // "@types/node": "latest",
-      "@types/tar": "^6.1.3",
+      // "@types/tar": "^6.1.3",
     },
   },
 };

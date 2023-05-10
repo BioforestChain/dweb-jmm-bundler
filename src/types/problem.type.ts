@@ -1,7 +1,8 @@
 export interface IProblemConfig {
-  frontPath?: string; // 前端路径
+  destPath:string; // 项目地址
+  frontBuildPath: string; // 前端打包完的路径
   // backPath: string; // 后端路径 未开放
-  metaPath?:string; // metabata.json地址
+  // metaPath?:string; // metabata.json地址
 }
 
 export type $HTTPS = `https://${string}`;
