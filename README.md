@@ -1,4 +1,23 @@
-# dweb_bundle
+<br />
+<br />
+
+<p align="center">
+<img src="docs/images/logo.svg" width="240">
+</p>
+
+<br />
+<br />
+
+
+# About dweb_bundle
+
+![Buildkite](https://img.shields.io/buildkite/0eae07525f8e44a19b48fa937813e2c21ee04aa351361cd851)
+![stable-release](https://img.shields.io/badge/bfs-bfex-da282a)
+![starts](https://shields.io/github/stars/BioforestChain/dweb_bundle)
+[![Telegram Group][telegram-badge]][telegram-url]
+
+[telegram-badge]: https://cdn.jsdelivr.net/gh/Patrolavia/telegram-badge@8fe3382b3fd3a1c533ba270e608035a27e430c2e/chat.svg
+[telegram-url]: https://t.me/+SiZ53KtzsMw0M2Rl
 
 DwebBrowser 前后端打包工具，把您开发的包打包成`.bfsa`形式。
 

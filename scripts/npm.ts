@@ -2,14 +2,11 @@ import { EntryPoint, LibName, build, emptyDir, type BuildOptions } from "https:/
 import npmConfig from "./npm.json" assert { type: "json" };
 
 const entryPoints: EntryPoint[] = [];
-// 适配入口不是index的情况
-let entry = `${npmConfig.buildFromRootDir}/index.ts`;
-if (npmConfig.buildFromRootDir.includes(".ts")) {
-  entry = npmConfig.buildFromRootDir;
-}
+
 entryPoints.push({
-  name: npmConfig.mainExports,
-  path: entry,
+  kind: "bin",
+  name: npmConfig.commandName,
+  path:npmConfig.buildFromRootDir
 });
 
 export const buildOptions: BuildOptions = {
@@ -33,9 +30,6 @@ export const buildOptions: BuildOptions = {
     version: npmConfig.version,
     description: npmConfig.description,
     license: "MIT",
-    bin: {
-      "bfex":"./esm/src/index.js"
-    },
     repository: {
       type: "git",
       url: "git+https://github.com/BioforestChain/dweb_bundle.git",

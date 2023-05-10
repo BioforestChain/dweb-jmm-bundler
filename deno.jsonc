@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "dev":"deno run -A --allow-read   ./src/index.ts bfex",
+    "dev":"deno run -A --allow-read  ./src/index.ts bfex",
     "build": "deno run --unstable -A --watch  ./scripts/npm.ts",
     "pub": "deno run --unstable -A --allow-env ./scripts/pub.ts"
   },
