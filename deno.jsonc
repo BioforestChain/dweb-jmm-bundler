@@ -1,8 +1,9 @@
 {
   "tasks": {
     "dev":"deno run -A --allow-read  ./src/index.ts bfex",
-    "build": "deno run --unstable -A --watch  ./scripts/npm.ts",
-    "pub": "deno run --unstable -A --allow-env ./scripts/pub.ts"
+    // "build": "deno run --unstable -A --watch  ./scripts/npm.ts",
+    "pub": "deno run --unstable -A --allow-env ./scripts/pub.ts",
+    "build":"deno run --unstable -A ./scripts/build.ts"
   },
   "compilerOptions": {
     "allowJs": false,

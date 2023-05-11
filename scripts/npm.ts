@@ -16,7 +16,10 @@ export const buildOptions: BuildOptions = {
   scriptModule: false,
   shims: {
     deno: true,
-    blob:true
+    // custom: [{
+    //   module: "./shims/stdout.ts",
+    //   globalNames: ["stdout"],
+    // }]
   },
   compilerOptions: {
     target: "ES2020",

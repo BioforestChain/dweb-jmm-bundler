@@ -53,8 +53,9 @@ export async function bundle(options: IProblemConfig) {
   metadata.size = appStatus.size;
   metadata.releaseDate = appStatus.mtime;
 
+
   // 生成bfs-metadata.json
-  const bfsMetaPath = path.resolve(destPath,"bfs-metadata.json");
+  const bfsMetaPath = path.resolve(destPath,"bfex-metadata.json");
   createFile(bfsMetaPath, metadata);
 
   console.log("bundle bfsa application done!!!");
@@ -68,8 +69,8 @@ export async function bundle(options: IProblemConfig) {
 async function createBfsaMetaData(destPath: string) {
   const bfsMetaPath = await searchMetadata(destPath);
 
-  const bfsMetaU8 = await import(bfsMetaPath)
-  const bfsMeta: $UserMetadata = bfsMetaU8.default
+  const bfsMetaU8 = await Deno.readTextFile(bfsMetaPath);
+  const bfsMeta:$UserMetadata = JSON.parse(bfsMetaU8)
   const bfsUrl = new URL(bfsMeta.home);
 
   const _metadata: $BFSMetaData = {
@@ -110,7 +111,7 @@ async function searchMetadata(destPath: string) {
   
   console.log("Project address=>",destPath)
   // 搜索bfs-metadata.ts
-  const bfsMetaPath = await searchFile(destPath, /^bfs-metadata\.ts$/i);
+  const bfsMetaPath = await searchFile(destPath, /^bfs-metadata\.json$/i);
   if (bfsMetaPath === "") {
     const bfsPath = await Input.prompt("没有找到配置文件地址，请输入bfs-metadata.json配置文件地址：");
     await catchFunctionType(Deno.stat,bfsPath)
