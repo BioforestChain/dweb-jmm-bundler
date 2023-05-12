@@ -7,7 +7,8 @@ import {
   copyDir,
   createBfsaDir,
   createFile,
-  searchFile,
+  filePathToUrl,
+  searchFile
 } from "../utils/file.ts";
 
 /**
@@ -36,10 +37,9 @@ export async function bundle(options: IProblemConfig) {
   // 将后端项目编译到sys目录
   const workerPath = path.join(temporaryPath, "sys/bfs_worker/public.service.worker.js");
   const workerUrl = new URL("./public.service.worker.js",import.meta.url)
-  console.log(workerUrl.href)
-  const servicePath = path.dirname(workerUrl.href);
-
-  await Deno.copyFile(workerUrl.href, workerPath);
+  const workerJs = filePathToUrl(workerUrl.href)
+  console.log(workerJs)
+  await Deno.copyFile(workerJs, workerPath);
 
   //TODO 配置文件写入boot目录
   // const bootPath = path.join(destPath, "boot");

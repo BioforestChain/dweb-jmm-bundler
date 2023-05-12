@@ -28,7 +28,7 @@ export async function createBfsaDir(
     // 创建bfsApp目录
     await mkdir(temporaryPath, { recursive: true });
     await mkdir(path.join(temporaryPath, "boot"));
-    // await mkdir(path.join(temporaryPath, "sys"));
+    await mkdir(path.join(temporaryPath, "sys/bfs_worker"), { recursive: true });
     await mkdir(path.join(temporaryPath, "tmp"));
     await mkdir(path.join(temporaryPath, "home"));
     await mkdir(path.join(temporaryPath, "usr"));
@@ -97,3 +97,20 @@ export const catchFunctionType = async <R>(
     throw error;
   }
 };
+
+/**
+ * file/// 路径转化为
+ * @param filePath 
+ */
+export const filePathToUrl = (url:string) => {
+  const isWindows = Deno.build.os === "windows";
+  const fileUrl = new URL(url);
+  let filePath = isWindows
+    ? fileUrl.pathname.substring(1).replace(/\//g, "\\")
+    : fileUrl.pathname;
+  if (isWindows && filePath.indexOf(":") !== -1) {
+    // Remove leading slash on Windows drive letter paths
+    filePath = filePath.substring(1);
+  }
+  return decodeURIComponent(filePath);
+}
