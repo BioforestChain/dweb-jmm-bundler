@@ -45,3 +45,13 @@ bfex
 
 1. 链上 APPID 认证申请。
 2. 上传到 DwebBrowser DAPP 商城。
+
+
+### shims
+
+```ts
+writeSync(p) {
+    process.stdout.write(p);
+    return p.length
+},
+```

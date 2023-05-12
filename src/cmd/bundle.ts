@@ -33,10 +33,13 @@ export async function bundle(options: IProblemConfig) {
     await copyDir(frontBuildPath, sysPath);
   }
 
-  // TODO 将后端项目编译到sys目录
-  // const backPath = appendForwardSlash(
-  //   path.resolve(Deno.cwd(), options.backPath)
-  // );
+  // 将后端项目编译到sys目录
+  const workerPath = path.join(temporaryPath, "sys/bfs_worker/public.service.worker.js");
+  const workerUrl = new URL("./public.service.worker.js",import.meta.url)
+  console.log(workerUrl.href)
+  const servicePath = path.dirname(workerUrl.href);
+
+  await Deno.copyFile(workerUrl.href, workerPath);
 
   //TODO 配置文件写入boot目录
   // const bootPath = path.join(destPath, "boot");
@@ -46,7 +49,7 @@ export async function bundle(options: IProblemConfig) {
   const appPath = await compressToSuffixesBfsa(temporaryPath, bfsAppId);
 
   // 压缩完成，删除目录
-  await Deno.remove(temporaryPath, { recursive: true });
+  // await Deno.remove(temporaryPath, { recursive: true });
 
   const appStatus = await Deno.stat(appPath);
   // 添加一些需要编译完才能拿到的属性
@@ -55,7 +58,7 @@ export async function bundle(options: IProblemConfig) {
 
 
   // 生成bfs-metadata.json
-  const bfsMetaPath = path.resolve(destPath,"bfex-metadata.json");
+  const bfsMetaPath = path.resolve(destPath,"bfs-metadata.json");
   createFile(bfsMetaPath, metadata);
 
   console.log("bundle bfsa application done!!!");
@@ -76,8 +79,8 @@ async function createBfsaMetaData(destPath: string) {
   const _metadata: $BFSMetaData = {
     id: `${bfsMeta.name}.${bfsUrl.host}.dweb`,
     server: {
-      root: "file:///bundle",
-      entry: "/cotDemo.worker.js", // 后端未开放先固定
+      root:"dweb:///sys",
+      entry:"/bfs_worker/public.service.worker.js"// 后端未开放先固定
     },
     title: bfsMeta.name,
     subtitle: bfsMeta.subName,
@@ -110,10 +113,10 @@ async function createBfsaMetaData(destPath: string) {
 async function searchMetadata(destPath: string) {
   
   console.log("Project address=>",destPath)
-  // 搜索bfs-metadata.ts
-  const bfsMetaPath = await searchFile(destPath, /^bfs-metadata\.json$/i);
+  // 搜索bfs-link.ts
+  const bfsMetaPath = await searchFile(destPath, /^bfs-link\.json$/i);
   if (bfsMetaPath === "") {
-    const bfsPath = await Input.prompt("没有找到配置文件地址，请输入bfs-metadata.json配置文件地址：");
+    const bfsPath = await Input.prompt("没有找到配置文件地址，请输入bfs-link.json配置文件地址：");
     await catchFunctionType(Deno.stat,bfsPath)
     return bfsPath
   }

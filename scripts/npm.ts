@@ -18,7 +18,7 @@ export const buildOptions: BuildOptions = {
     deno: true,
     // custom: [{
     //   module: "./shims/stdout.ts",
-    //   globalNames: ["stdout"],
+    //   globalNames: ["Deno.stdout"],
     // }]
   },
   compilerOptions: {
