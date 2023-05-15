@@ -3,7 +3,7 @@
   "commandName": "bfex",
   "buildFromRootDir": "./src/index.ts",
   "buildToRootDir": "./build",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": ".bfsa application bundle service.",
   "lib": [
     "es2022",
