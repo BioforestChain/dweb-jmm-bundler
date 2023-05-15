@@ -11,13 +11,16 @@ export async function compressToSuffixesBfsa(dest: string, bfsAppId: string) {
     if (!entry.isFile) {
       continue;
     }
-    const filePath = path.join(bfsAppId,entry.path.slice(dest.length))
-    await tar.append(filePath, {
+    let filePath = path.join(bfsAppId, entry.path.slice(dest.length));
+    if (Deno.build.os === "windows") {
+      filePath = filePath.replace(/\\/g, "/");
+    }
+    tar.append(filePath, {
       filePath: entry.path,
     });
   }
   // use tar.getReader() to read the contents.
-  const bfsaPath = path.resolve(dest,"../", `${bfsAppId}.bfsa`);
+  const bfsaPath = path.resolve(dest, "../", `${bfsAppId}.bfsa`);
   const writer = await Deno.open(bfsaPath, {
     write: true,
     create: true,

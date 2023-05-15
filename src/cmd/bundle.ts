@@ -37,7 +37,6 @@ export async function bundle(options: IProblemConfig) {
   // 将后端项目编译到sys目录
   const workerPath = path.join(temporaryPath, "sys/bfs_worker/public.service.worker.js");
   const workerUrl = new URL("./public.service.worker.js",import.meta.url)
-  console.log("Xxx",workerUrl.href)
   const workerJs = filePathToUrl(workerUrl.href)
   await Deno.copyFile(workerJs, workerPath);
 
