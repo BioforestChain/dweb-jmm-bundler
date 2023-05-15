@@ -1,8 +1,7 @@
 export const doPub = async (outDir:string) => {
-  const command = new Deno.Command("/usr/local/bin/node", {
+  const command = new Deno.Command("npm", {
     cwd:outDir,
     args:[
-      "npm",
       "publish",
       "--access=public",
     ],

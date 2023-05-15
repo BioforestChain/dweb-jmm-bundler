@@ -37,8 +37,8 @@ export async function bundle(options: IProblemConfig) {
   // 将后端项目编译到sys目录
   const workerPath = path.join(temporaryPath, "sys/bfs_worker/public.service.worker.js");
   const workerUrl = new URL("./public.service.worker.js",import.meta.url)
+  console.log("Xxx",workerUrl.href)
   const workerJs = filePathToUrl(workerUrl.href)
-  console.log(workerJs)
   await Deno.copyFile(workerJs, workerPath);
 
   //TODO 配置文件写入boot目录
@@ -49,7 +49,7 @@ export async function bundle(options: IProblemConfig) {
   const appPath = await compressToSuffixesBfsa(temporaryPath, bfsAppId);
 
   // 压缩完成，删除目录
-  // await Deno.remove(temporaryPath, { recursive: true });
+  await Deno.remove(temporaryPath, { recursive: true });
 
   const appStatus = await Deno.stat(appPath);
   // 添加一些需要编译完才能拿到的属性

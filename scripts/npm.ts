@@ -15,11 +15,15 @@ export const buildOptions: BuildOptions = {
   typeCheck: true,
   scriptModule: false,
   shims: {
-    deno: true,
-    // custom: [{
-    //   module: "./shims/stdout.ts",
-    //   globalNames: ["Deno.stdout"],
-    // }]
+    // deno: true,
+    custom: [{
+      // this is what `timers: "dev"` does internally
+      package: {
+        name: "@deno/shim-deno",
+        version: "~0.16.0",
+      },
+      globalNames: ["Deno"],
+    }]
   },
   compilerOptions: {
     target: "ES2020",
@@ -52,4 +56,5 @@ if (import.meta.main) {
   await build(buildOptions);
   await Deno.copyFile("./LICENSE", `${npmConfig.buildToRootDir}/LICENSE`);
   await Deno.copyFile("./README.md", `${npmConfig.buildToRootDir}/README.md`);
+  await Deno.copyFile("./src/cmd/public.service.worker.js", `${npmConfig.buildToRootDir}/esm/src/cmd/public.service.worker.js`);
 }

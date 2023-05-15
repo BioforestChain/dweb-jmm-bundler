@@ -28,7 +28,9 @@ export async function createBfsaDir(
     // 创建bfsApp目录
     await mkdir(temporaryPath, { recursive: true });
     await mkdir(path.join(temporaryPath, "boot"));
-    await mkdir(path.join(temporaryPath, "sys/bfs_worker"), { recursive: true });
+    await mkdir(path.join(temporaryPath, "sys/bfs_worker"), {
+      recursive: true,
+    });
     await mkdir(path.join(temporaryPath, "tmp"));
     await mkdir(path.join(temporaryPath, "home"));
     await mkdir(path.join(temporaryPath, "usr"));
@@ -73,7 +75,7 @@ export async function searchFile(
  * @param dest 目标目录
  */
 export async function copyDir(src: string, dest: string) {
-  await fs.copy(src, dest,{overwrite:true});
+  await fs.copy(src, dest, { overwrite: true });
 }
 
 /**
@@ -98,19 +100,76 @@ export const catchFunctionType = async <R>(
   }
 };
 
+const forwardSlashRegEx = /\//g;
+const CHAR_LOWERCASE_A = 97;
+const CHAR_LOWERCASE_Z = 122;
 /**
  * file/// 路径转化为
- * @param filePath 
+ * @param filePath
  */
-export const filePathToUrl = (url:string) => {
+export const filePathToUrl = (path: string | URL) => {
   const isWindows = Deno.build.os === "windows";
-  const fileUrl = new URL(url);
-  let filePath = isWindows
-    ? fileUrl.pathname.substring(1).replace(/\//g, "\\")
-    : fileUrl.pathname;
-  if (isWindows && filePath.indexOf(":") !== -1) {
-    // Remove leading slash on Windows drive letter paths
-    filePath = filePath.substring(1);
+  let url = path;
+  if (typeof path === "string") {
+    url = new URL(path);
+  } else if (!(url instanceof URL)) {
+    throw new Deno.errors.InvalidData(
+      "invalid argument path , must be a string or URL"
+    );
   }
-  return decodeURIComponent(filePath);
+  if (url.protocol !== "file:") {
+    throw new Deno.errors.InvalidData("invalid url scheme");
+  }
+  return isWindows ? getPathFromURLWin(url) : getPathFromURLPosix(url);
+};
+
+function getPathFromURLWin(url: URL) {
+  const hostname = url.hostname;
+  let pathname = url.pathname;
+  for (let n = 0; n < pathname.length; n++) {
+    if (pathname[n] === "%") {
+      const third = pathname.codePointAt(n + 2) || 32;
+      if (
+        (pathname[n + 1] === "2" && third === 102) ||
+        (pathname[n + 1] === "5" && third === 99)
+      ) {
+        throw new Deno.errors.InvalidData(
+          "must not include encoded \\ or / characters"
+        );
+      }
+    }
+  }
+  pathname = pathname.replace(forwardSlashRegEx, "\\");
+  pathname = decodeURIComponent(pathname);
+  if (hostname !== "") {
+    return `\\\\${hostname}${pathname}`;
+  } else {
+    const letter = pathname.codePointAt(1)! | 32;
+    const sep4 = pathname[2];
+    if (
+      letter < CHAR_LOWERCASE_A ||
+      letter > CHAR_LOWERCASE_Z ||
+      sep4 !== ":"
+    ) {
+      throw new Deno.errors.InvalidData("file url path must be absolute");
+    }
+    return pathname.slice(1);
+  }
+}
+function getPathFromURLPosix(url: URL) {
+  if (url.hostname !== "") {
+    throw new Deno.errors.InvalidData("invalid file url hostname");
+  }
+  const pathname = url.pathname;
+  for (let n = 0; n < pathname.length; n++) {
+    if (pathname[n] === "%") {
+      const third = pathname.codePointAt(n + 2) || 32;
+      if (pathname[n + 1] === "2" && third === 102) {
+        throw new Deno.errors.InvalidData(
+          "must not include encoded / characters"
+        );
+      }
+    }
+  }
+  return decodeURIComponent(pathname);
 }
