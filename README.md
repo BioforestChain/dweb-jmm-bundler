@@ -2,18 +2,18 @@
 <br />
 
 <p align="center">
-<img src="docs/images/logo.svg" width="240">
+<img src="docs/images/logo.png" width="240">
 </p>
 
 <br />
 <br />
 
 
-# About dweb_bundle
+# About dweb-jmm-bundler
 
 ![Buildkite](https://img.shields.io/buildkite/0eae07525f8e44a19b48fa937813e2c21ee04aa351361cd851)
-![stable-release](https://img.shields.io/badge/bfs-bfex-da282a)
-![starts](https://shields.io/github/stars/BioforestChain/dweb_bundle)
+![stable-release](https://img.shields.io/badge/bfs-jmm-da282a)
+![starts](https://shields.io/github/stars/BioforestChain/dweb-jmm-bundler)
 [![Telegram Group][telegram-badge]][telegram-url]
 
 [telegram-badge]: https://cdn.jsdelivr.net/gh/Patrolavia/telegram-badge@8fe3382b3fd3a1c533ba270e608035a27e430c2e/chat.svg

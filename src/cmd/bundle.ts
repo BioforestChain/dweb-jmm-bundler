@@ -29,13 +29,13 @@ export async function bundle(options: IProblemConfig) {
   const temporaryPath = await createBfsaDir(destPath,bfsAppId);
 
   // 将前端项目移动到sys目录 (无界面应用不包含前端)
-  const sysPath = path.join(temporaryPath, "sys");
+  const usrPath = path.join(temporaryPath, "usr");
   if (frontBuildPath) { // 如果是纯后端应用则不需要复制
-    await copyDir(frontBuildPath, sysPath);
+    await copyDir(frontBuildPath, usrPath);
   }
 
   // 将后端项目编译到sys目录
-  const workerPath = path.join(temporaryPath, "sys/bfs_worker/public.service.worker.js");
+  const workerPath = path.join(temporaryPath, "usr/bfs_worker/public.service.worker.js");
   const workerUrl = new URL("./public.service.worker.js",import.meta.url)
   const workerJs = filePathToUrl(workerUrl.href)
   await Deno.copyFile(workerJs, workerPath);
@@ -78,7 +78,7 @@ async function createBfsaMetaData(destPath: string) {
   const _metadata: $BFSMetaData = {
     id: `${bfsMeta.name}.${bfsUrl.host}.dweb`,
     server: {
-      root:"dweb:///sys",
+      root:"/usr",
       entry:"/bfs_worker/public.service.worker.js"// 后端未开放先固定
     },
     title: bfsMeta.name,
@@ -87,9 +87,6 @@ async function createBfsaMetaData(destPath: string) {
     downloadUrl: bfsMeta.downloadUrl,
     images: bfsMeta.images,
     introduction: bfsMeta.introduction,
-    splashScreen: {
-      entry: "",
-    },
     author: bfsMeta.author,
     version: bfsMeta.version,
     keywords: bfsMeta.keywords,
@@ -98,8 +95,6 @@ async function createBfsaMetaData(destPath: string) {
     fileHash: "",
     plugins: [],
     releaseDate: null,
-    staticWebServers: [],
-    openWebViewList: [],
   };
   return _metadata;
 }
@@ -122,119 +117,6 @@ async function searchMetadata(destPath: string) {
   return bfsMetaPath;
 }
 
-// /**
-//  * 在boot目录写入bfs-metadata.json和link.json
-//  * @param bootPath boot目录
-//  * @param bfsAppId 应用id
-//  * @param metadata bfs-metadata数据
-//  * @returns
-//  */
-// async function writeConfigJson(bootPath: string, metadata: $BFSMetaData) {
-//   // bfsa-metadata.json
-//   // 文件列表生成校验码
-//   const destPath = path.resolve(bootPath, "../");
-//   const filesList = await fileListHash(
-//     destPath,
-//     bfsAppId,
-//     []
-//   );
-//   // link.json
-//   const linkJson = await genLinkJson(bfsAppId, metadata, filesList);
-//   await writeFile(
-//     path.join(bootPath, "link.json"),
-//     JSON.stringify(linkJson),
-//     "utf-8"
-//   );
-//   return;
-// }
-
-// /**
-//  * 生成link.json
-//  * @param bfsAppId  应用id
-//  * @param metadata  bfs-metadata数据
-//  * @param filesList 文件列表
-//  * @returns
-//  */
-// function genLinkJson(
-//   bfsAppId: string,
-//   metadata: BFSMetaData,
-//   filesList: Files[]
-// ): LinkMetadata {
-//   const { manifest } = metadata;
-
-//   // 最大缓存时间，一般6小时更新一次。最快不能快于1分钟，否则按1分钟算。
-//   const maxAge = manifest.maxAge
-//     ? manifest.maxAge < 1
-//       ? 1
-//       : manifest.maxAge
-//     : 6 * 60;
-
-//   const linkJson: LinkMetadata = {
-//     version: manifest.version,
-//     bfsAppId: bfsAppId,
-//     name: manifest.name,
-//     icon: manifest.icon,
-//     author: manifest.author || [],
-//     autoUpdate: {
-//       maxAge: maxAge,
-//       provider: 1,
-//       url: `https://shop.plaoc.com/${bfsAppId}/appversion.json`,
-//       version: manifest.version,
-//       files: filesList,
-//       releaseNotes: manifest.releaseNotes || "",
-//       releaseName: manifest.releaseName || "",
-//       releaseDate: manifest.releaseDate || "",
-//     },
-//   };
-
-//   return linkJson;
-// }
-
-// /**
-//  * 生成appversion.json
-//  * @param bfsAppId 应用id
-//  * @param metadata 应用配置信息
-//  * @param destPath 应用目录
-//  * @returns
-//  */
-// async function genAppVersionJson(
-//   bfsAppId: string,
-//   metadata: BFSMetaData,
-//   destPath: string
-// ) {
-//   const { manifest } = metadata;
-//   const compressFile = path.resolve(destPath, `../${bfsAppId}.bfsa`);
-//   const fileStat = await stat(compressFile);
-//   const fileHash = await checksumFile(compressFile, "sha512", "hex");
-
-//   const appVersionJson: IAppversion = {
-//     data: {
-//       version: manifest.version,
-//       name: manifest.name,
-//       icon: manifest.icon,
-//       files: [
-//         {
-//           url: `https://shop.plaoc.com/${bfsAppId}/${bfsAppId}.bfsa`,
-//           size: fileStat.size,
-//           sha512: fileHash,
-//         },
-//       ],
-//       releaseNotes: manifest.releaseNotes || "",
-//       releaseName: manifest.releaseName || "",
-//       releaseDate: manifest.releaseDate || "",
-//     },
-//     errorCode: 0,
-//     errorMsg: "success",
-//   };
-
-//   await writeFile(
-//     path.resolve(destPath, "../appversion.json"),
-//     JSON.stringify(appVersionJson, null, 2),
-//     "utf-8"
-//   );
-
-//   return;
-// }
 
 // /**
 //  * 为文件列表生成sha512校验码
@@ -271,36 +153,4 @@ async function searchMetadata(destPath: string) {
 //   }
 
 //   return filesList;
-// }
-
-// /**
-//  * 查找后端项目路口文件
-//  * @param backPath 后端项目地址
-//  * @returns
-//  */
-// async function findBackEntryFile(backPath: string) {
-//   const packageJsonPath = await searchFile(backPath, /package.json/);
-//   const jsonPath = pathToFileURL(packageJsonPath);
-//   const jsonConfig = (await import(jsonPath.href, { assert: { type: "json" } }))
-//     .default;
-//   const backDir = path.dirname(packageJsonPath);
-//   const rootPath = path.resolve(backPath, "../");
-//   let entryFile = "";
-
-//   if (jsonConfig.main) {
-//     entryFile = path.resolve(rootPath, path.resolve(backDir, jsonConfig.main));
-//   } else if (jsonConfig.module) {
-//     entryFile = path.resolve(
-//       rootPath,
-//       path.resolve(backDir, jsonConfig.module)
-//     );
-//   } else if (jsonConfig.exports?.["."]?.import) {
-//     const entry =
-//       typeof jsonConfig.exports["."].import === "string"
-//         ? jsonConfig.exports["."].import
-//         : jsonConfig.exports["."].import.default;
-//     entryFile = path.resolve(rootPath, path.resolve(backDir, entry));
-//   }
-
-//   return entryFile;
 // }

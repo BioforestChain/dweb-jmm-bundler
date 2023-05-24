@@ -28,12 +28,12 @@ export async function createBfsaDir(
     // 创建bfsApp目录
     await mkdir(temporaryPath, { recursive: true });
     await mkdir(path.join(temporaryPath, "boot"));
-    await mkdir(path.join(temporaryPath, "sys/bfs_worker"), {
-      recursive: true,
-    });
+    await mkdir(path.join(temporaryPath, "sys"));
     await mkdir(path.join(temporaryPath, "tmp"));
     await mkdir(path.join(temporaryPath, "home"));
-    await mkdir(path.join(temporaryPath, "usr"));
+    await mkdir(path.join(temporaryPath, "usr/bfs_worker"),{
+      recursive: true,
+    });
 
     return temporaryPath;
   } catch (ex) {

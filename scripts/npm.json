@@ -1,9 +1,9 @@
 {
   "name": "@bfex/bundle",
-  "commandName": "bfex",
+  "commandName": "jmm",
   "buildFromRootDir": "./src/index.ts",
   "buildToRootDir": "./build",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": ".bfsa application bundle service.",
   "lib": [
     "es2022",

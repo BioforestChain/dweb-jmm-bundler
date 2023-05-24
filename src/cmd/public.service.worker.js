@@ -256,29 +256,6 @@ var closeDwebView = async (webview_id) => {
   ).text();
 };
 
-// src/user/tool/app.handle.mts
-var webViewMap = /* @__PURE__ */ new Map();
-var restartApp = async (servers, ipcs) => {
-  const serverOp = servers.map(async (server) => {
-    await server.close();
-  });
-  const opcOp = ipcs.map((ipc2) => {
-    ipc2.close();
-  });
-  await Promise.all([serverOp, opcOp]);
-  webViewMap.forEach(async (state) => {
-    await closeDwebView(state.webviewId);
-  });
-  jsProcess.restart();
-  return "ok";
-};
-var closeFront = () => {
-  webViewMap.forEach(async (state) => {
-    await closeDwebView(state.webviewId);
-  });
-  return "ok";
-};
-
 // src/helper/binaryHelper.cts
 var u8aConcat = (binaryList) => {
   let totalLength = 0;
@@ -568,14 +545,14 @@ var ReadableStreamOut = class {
 
 // src/user/tool/tool.request.mts
 var { IpcResponse, Ipc, IpcRequest, IpcHeaders, IPC_METHOD } = ipc;
+var hashConnentMap = /* @__PURE__ */ new Set();
 var ipcObserversMap = /* @__PURE__ */ new Map();
 var INTERNAL_PREFIX = "/internal";
 var fetchSignal = createSignal2();
-var onFetchSignal = createSignal2();
 async function onApiRequest(serverurlInfo, request, httpServerIpc) {
   let ipcResponse;
+  const url = request.parsed_url;
   try {
-    const url = new URL(request.url, serverurlInfo.internal_origin);
     if (url.pathname.startsWith(INTERNAL_PREFIX)) {
       ipcResponse = internalFactory(
         url,
@@ -662,32 +639,11 @@ var internalFactory = (url, req_id, httpServerIpc, serverurlInfo) => {
       httpServerIpc
     );
   }
-  if (pathname === "/onFetch") {
-    const streamPo = serviceWorkerOnFetch();
-    return IpcResponse.fromStream(
-      req_id,
-      200,
-      void 0,
-      streamPo.stream,
-      httpServerIpc
-    );
-  }
 };
 var serviceWorkerFetch = () => {
   const streamPo = new ReadableStreamOut();
   const ob = { controller: streamPo.controller };
   fetchSignal.listen((ipcRequest) => {
-    const jsonlineEnd = simpleEncoder("\n", "utf8");
-    const json = ipcRequest.toJSON();
-    const uint8 = simpleEncoder(JSON.stringify(json), "utf8");
-    ob.controller.enqueue(u8aConcat([uint8, jsonlineEnd]));
-  });
-  return streamPo;
-};
-var serviceWorkerOnFetch = () => {
-  const streamPo = new ReadableStreamOut();
-  const ob = { controller: streamPo.controller };
-  onFetchSignal.listen((ipcRequest) => {
     const jsonlineEnd = simpleEncoder("\n", "utf8");
     const json = ipcRequest.toJSON();
     const uint8 = simpleEncoder(JSON.stringify(json), "utf8");
@@ -724,6 +680,27 @@ var observeFactory = (mmid) => {
   return streamPo;
 };
 
+// src/user/tool/app.handle.mts
+var webViewMap = /* @__PURE__ */ new Map();
+var closeApp = async (servers, ipcs) => {
+  hashConnentMap.clear();
+  const serverOp = servers.map(async (server) => {
+    await server.close();
+  });
+  const opcOp = ipcs.map((ipc2) => {
+    ipc2.close();
+  });
+  await Promise.all([serverOp, opcOp]);
+  closeFront();
+};
+var closeFront = () => {
+  webViewMap.forEach(async (state) => {
+    await closeDwebView(state.webviewId);
+  });
+  webViewMap.clear();
+  return "closeFront ok";
+};
+
 // src/user/public-service/public.service.worker.mts
 var main = async () => {
   const { IpcEvent } = ipc;
@@ -731,33 +708,23 @@ var main = async () => {
   let oldWebviewState = [];
   const multiWebViewIpc = await jsProcess.connect("mwebview.sys.dweb");
   const multiWebViewCloseSignal = createSignal();
-  const tryOpenView = () => {
-    const newWindowState = new PromiseOut();
-    (async () => {
-      try {
-        if (webViewMap.size === 0) {
-          const url = await mainUrl.promise;
-          const view_id = await nativeOpen(url);
-          webViewMap.set(view_id, {
-            isActivated: true,
-            webviewId: view_id
-          });
-          return view_id;
-        }
-        await Promise.all(
-          [...webViewMap.values()].map((item) => {
-            return nativeActivate(item.webviewId);
-          })
-        );
-      } finally {
-        newWindowState.resolve(true);
-      }
-    })();
-    windowState = newWindowState;
-    return newWindowState;
+  const EXTERNAL_PREFIX = "/external/";
+  const tryOpenView = async () => {
+    if (webViewMap.size === 0) {
+      const url = await mainUrl.promise;
+      const view_id = await nativeOpen(url);
+      webViewMap.set(view_id, {
+        isActivated: true,
+        webviewId: view_id
+      });
+      return view_id;
+    }
+    await Promise.all(
+      [...webViewMap.values()].map((item) => {
+        return nativeActivate(item.webviewId);
+      })
+    );
   };
-  let windowState;
-  windowState = tryOpenView();
   const { IpcResponse: IpcResponse2, IpcHeaders: IpcHeaders2 } = ipc;
   const wwwServer = await http.createHttpDwebServer(jsProcess, {
     subdomain: "www",
@@ -775,10 +742,7 @@ var main = async () => {
   const wwwReadableStreamIpc = await wwwServer.listen();
   const externalReadableStreamIpc = await externalServer.listen();
   apiReadableStreamIpc.onRequest(async (request, ipc2) => {
-    const url = new URL(
-      request.url,
-      apiServer.startResult.urlInfo.internal_origin
-    );
+    const url = request.parsed_url;
     if (url.pathname.startsWith("/dns.sys.dweb")) {
       const result = await serviceWorkerFactory(url, ipc2);
       const ipcResponse = IpcResponse2.fromText(
@@ -811,10 +775,58 @@ var main = async () => {
       )
     );
   });
+  const externalMap = /* @__PURE__ */ new Map();
   externalReadableStreamIpc.onRequest(async (request, ipc2) => {
-    console.log("externalReadableStreamIpc =>", request, ipc2);
-    fetchSignal.emit(request);
-    console.log(request, ipc2);
+    const url = request.parsed_url;
+    const xHost = decodeURIComponent(url.searchParams.get("X-Dweb-Host") ?? "");
+    if (url.pathname.startsWith(EXTERNAL_PREFIX)) {
+      const pathname = url.pathname.slice(EXTERNAL_PREFIX.length);
+      const externalReqId = parseInt(pathname);
+      if (typeof externalReqId !== "number" || isNaN(externalReqId)) {
+        return ipc2.postMessage(
+          IpcResponse2.fromText(
+            request.req_id,
+            400,
+            request.headers,
+            "reqId is NAN",
+            ipc2
+          )
+        );
+      }
+      const responsePOo = externalMap.get(externalReqId);
+      if (!responsePOo) {
+        return ipc2.postMessage(
+          IpcResponse2.fromText(
+            request.req_id,
+            500,
+            request.headers,
+            `not found external requst,req_id ${externalReqId}`,
+            ipc2
+          )
+        );
+      }
+      responsePOo.resolve(
+        new IpcResponse2(externalReqId, 200, request.headers, request.body, ipc2)
+      );
+      externalMap.delete(externalReqId);
+      const icpResponse = IpcResponse2.fromText(
+        request.req_id,
+        200,
+        request.headers,
+        "ok",
+        ipc2
+      );
+      cros(icpResponse.headers);
+      return ipc2.postMessage(icpResponse);
+    }
+    if (xHost === externalServer.startResult.urlInfo.host) {
+      fetchSignal.emit(request);
+      const awaitResponse = new PromiseOut();
+      externalMap.set(request.req_id, awaitResponse);
+      const ipcResponse = await awaitResponse.promise;
+      cros(ipcResponse.headers);
+      ipc2.postMessage(ipcResponse);
+    }
   });
   const serviceWorkerFactory = async (url, ipc2) => {
     const pathname = url.pathname;
@@ -822,17 +834,18 @@ var main = async () => {
       return closeFront();
     }
     if (pathname.endsWith("restart")) {
-      return restartApp(
-        [apiServer, wwwServer],
-        [apiReadableStreamIpc, wwwReadableStreamIpc]
+      multiWebViewCloseSignal.emit();
+      closeApp(
+        [apiServer, wwwServer, externalServer],
+        [apiReadableStreamIpc, wwwReadableStreamIpc, externalReadableStreamIpc]
       );
+      jsProcess.restart();
+      return "restart ok";
     }
     return "no action for serviceWorker Factory !!!";
   };
   jsProcess.onActivity(async (ipcEvent, ipc2) => {
-    if (await windowState.promise === false) {
-      await tryOpenView();
-    }
+    await tryOpenView();
     ipc2.postMessage(IpcEvent.fromText("ready", "activity"));
     if (hasActivityEventIpcs.has(ipc2) === false) {
       hasActivityEventIpcs.add(ipc2);
@@ -843,17 +856,26 @@ var main = async () => {
     }
   });
   const hasActivityEventIpcs = /* @__PURE__ */ new Set();
-  multiWebViewIpc.onEvent(async (event) => {
-    console.log("connectMultiWebView =>", event.name);
+  jsProcess.onClose(async (event, ipc2) => {
+    multiWebViewCloseSignal.emit();
+    return closeApp(
+      [apiServer, wwwServer, externalServer],
+      [apiReadableStreamIpc, wwwReadableStreamIpc, externalReadableStreamIpc]
+    );
+  });
+  multiWebViewIpc.onEvent(async (event, ipc2) => {
     if (event.name === "state" /* State */ && typeof event.data === "string") {
       const newState = JSON.parse(event.data);
       const diff = detailed_default(oldWebviewState, newState);
       oldWebviewState = newState;
       diffFactory(diff);
     }
+    multiWebViewCloseSignal.listen(() => {
+      ipc2.postMessage(IpcEvent.fromText("close", ""));
+      ipc2.close();
+    });
   });
   const diffFactory = async (diff) => {
-    console.log("connectMultiWebView diffFactory=>", diff);
     for (const id in diff.added) {
       webViewMap.set(id, JSON.parse(diff.added[id]));
     }
@@ -869,11 +891,11 @@ var main = async () => {
       await nativeActivate(id);
     }
   };
-  {
-    const interUrl = wwwServer.startResult.urlInfo.buildInternalUrl((url) => {
-      url.pathname = "/index.html";
-    }).href;
-    mainUrl.resolve(interUrl);
-  }
+  const interUrl = wwwServer.startResult.urlInfo.buildInternalUrl((url) => {
+    url.pathname = "/index.html";
+  });
+  interUrl.searchParams.set("X-Api-Host", apiServer.startResult.urlInfo.host);
+  mainUrl.resolve(interUrl.href);
+  tryOpenView();
 };
 main();
