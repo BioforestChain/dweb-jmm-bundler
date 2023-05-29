@@ -1,4 +1,3 @@
-import { colors } from "https://deno.land/x/deno_cache@0.4.1/deps.ts";
 import { Input, logColors, path } from "../../deps.ts";
 import {
   $BFSMetaData,
@@ -68,7 +67,7 @@ export async function bundle(options: IProblemConfig) {
   const bfsMetaPath = path.resolve(destPath, "bfs-metadata.json");
   createFile(bfsMetaPath, metadata);
 
-  console.log(colors.bgRgb24("bundle jmm application done!!!",0x008080));
+  console.log(logColors.bgRgb24("bundle jmm application done!!!",0x008080));
 }
 
 /**
@@ -134,14 +133,14 @@ async function searchMetadata(destPath: string) {
   const bfsMetaPath = await searchFile(destPath, /^bfs-jmm\.json$/i);
   if (bfsMetaPath === "") {
     const bfsPath = await Input.prompt(
-      colors.bgBlue("The address of the configuration file was not found, please enter the address of the bfs-jmm.json configuration file:")
+      logColors.bgBlue("The address of the configuration file was not found, please enter the address of the bfs-jmm.json configuration file:")
     );
     await catchFunctionType(Deno.stat, bfsPath);
     const fileInfo = await Deno.stat(bfsPath);
     if(fileInfo.isDirectory) {
       const bfsMetaPath = await searchFile(destPath, /^bfs-jmm\.json$/i);
       if(bfsMetaPath === "") {
-        throw colors.bgRed(`The configuration file address was not found!`);
+        throw logColors.bgRed(`The configuration file address was not found!`);
       }
     }
     return bfsPath;

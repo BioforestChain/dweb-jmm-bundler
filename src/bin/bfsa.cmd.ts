@@ -1,5 +1,4 @@
-import { colors } from "https://deno.land/x/deno_cache@0.4.1/deps.ts";
-import { Command, EnumType, Input, Toggle, path } from "../../deps.ts";
+import { Command, EnumType, Input, Toggle, logColors, path } from "../../deps.ts";
 import npmConfig from "../../scripts/npm.json" assert { type: "json" };
 import { bundle } from "../cmd/bundle.ts";
 const program = new Command();
@@ -13,7 +12,6 @@ const appType = new EnumType(AppType);
 
 // 命令行模式 打包application为.jmm到指定位置
 program
-  .command("jmm")
   .description(npmConfig.description)
   .version(npmConfig.version)
   // 无界面应用必须包含后端
@@ -35,7 +33,7 @@ program
     }
   )
   .type("appType", appType)
-  .option("-t, --app-type [appType:appType]", `App types are [${colors.bgBlue("dynamic")}] and [${colors.bgBlue("static")}].`)
+  .option("-t, --app-type [appType:appType]", `App types are [${logColors.bgBlue("dynamic")}] and [${logColors.bgBlue("static")}].`)
   .option("-i, --interact [interact:boolean]", "Whether to enable interactive.",{
     default: false
   })

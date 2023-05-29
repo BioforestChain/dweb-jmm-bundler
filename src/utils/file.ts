@@ -1,5 +1,4 @@
-import { colors } from 'https://deno.land/x/deno_cache@0.4.1/deps.ts';
-import { fs, path } from "../../deps.ts";
+import { fs, logColors, path } from "../../deps.ts";
 import { $BFSMetaData } from "../types/metadata.type.ts";
 
 export async function createFile(fileName: string, obj: $BFSMetaData) {
@@ -95,7 +94,7 @@ export const catchFunctionType = async <R>(
     return await fun(...args);
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      throw colors.bgRed(`The passed folder does not exist, please check the path：${error.message}`);
+      throw logColors.bgRed(`The passed folder does not exist, please check the path：${error.message}`);
     }
     throw error;
   }

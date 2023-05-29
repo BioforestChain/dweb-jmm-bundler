@@ -1,4 +1,4 @@
-import { EntryPoint, LibName, build, emptyDir, type BuildOptions } from "https://deno.land/x/dnt@0.34.0/mod.ts";
+import { EntryPoint, LibName, build, emptyDir, type BuildOptions } from "https://deno.land/x/dnt@0.36.0/mod.ts";
 import npmConfig from "./npm.json" assert { type: "json" };
 
 const entryPoints: EntryPoint[] = [];
@@ -12,18 +12,18 @@ entryPoints.push({
 export const buildOptions: BuildOptions = {
   entryPoints: entryPoints,
   outDir: npmConfig.buildToRootDir,
-  typeCheck: true,
+  typeCheck: "both",
   scriptModule: false,
   shims: {
-    // deno: true,
-    custom: [{
-      // this is what `timers: "dev"` does internally
-      package: {
-        name: "@deno/shim-deno",
-        version: "~0.16.0",
-      },
-      globalNames: ["Deno"],
-    }]
+    deno: true,
+    // custom: [{
+    //   // this is what `timers: "dev"` does internally
+    //   package: {
+    //     name: "@deno/shim-deno",
+    //     version: "~0.16.0",
+    //   },
+    //   globalNames: ["Deno"],
+    // }]
   },
   compilerOptions: {
     target: "ES2020",
