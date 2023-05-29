@@ -1,5 +1,9 @@
-import { Input, path } from "../../deps.ts";
-import { $BFSMetaData, $UserMetadata } from "../types/metadata.type.ts";
+import { Input, logColors, path } from "../../deps.ts";
+import {
+  $BFSMetaData,
+  $UserMetadata,
+  expectedKeys,
+} from "../types/metadata.type.ts";
 import type { IProblemConfig } from "../types/problem.type.ts";
 import { compressToSuffixesBfsa } from "../utils/compress.ts";
 import {
@@ -8,7 +12,7 @@ import {
   createBfsaDir,
   createFile,
   filePathToUrl,
-  searchFile
+  searchFile,
 } from "../utils/file.ts";
 
 /**
@@ -16,28 +20,32 @@ import {
  * @param options
  */
 export async function bundle(options: IProblemConfig) {
-  let { destPath,frontBuildPath } = options;
-   // 判断用户输入的是绝对地址还是相对地址
-   destPath = path.isAbsolute(destPath)
-   ? destPath
-   : path.resolve(Deno.cwd(), destPath);
+  let { destPath, frontBuildPath } = options;
+  // 判断用户输入的是绝对地址还是相对地址
+  destPath = path.isAbsolute(destPath)
+    ? destPath
+    : path.resolve(Deno.cwd(), destPath);
   // 在用户输入的根目录先拿到metadata.json
   const metadata = await createBfsaMetaData(destPath);
 
   const bfsAppId = metadata.id;
 
-  const temporaryPath = await createBfsaDir(destPath,bfsAppId);
+  const temporaryPath = await createBfsaDir(destPath, bfsAppId);
 
   // 将前端项目移动到sys目录 (无界面应用不包含前端)
   const usrPath = path.join(temporaryPath, "usr");
-  if (frontBuildPath) { // 如果是纯后端应用则不需要复制
+  if (frontBuildPath) {
+    // 如果是纯后端应用则不需要复制
     await copyDir(frontBuildPath, usrPath);
   }
 
   // 将后端项目编译到sys目录
-  const workerPath = path.join(temporaryPath, "usr/bfs_worker/public.service.worker.js");
-  const workerUrl = new URL("./public.service.worker.js",import.meta.url)
-  const workerJs = filePathToUrl(workerUrl.href)
+  const workerPath = path.join(
+    temporaryPath,
+    "usr/bfs_worker/public.service.worker.js"
+  );
+  const workerUrl = new URL("./public.service.worker.js", import.meta.url);
+  const workerJs = filePathToUrl(workerUrl.href);
   await Deno.copyFile(workerJs, workerPath);
 
   //TODO 配置文件写入boot目录
@@ -55,12 +63,11 @@ export async function bundle(options: IProblemConfig) {
   metadata.size = appStatus.size;
   metadata.releaseDate = appStatus.mtime;
 
-
   // 生成bfs-metadata.json
-  const bfsMetaPath = path.resolve(destPath,"bfs-metadata.json");
+  const bfsMetaPath = path.resolve(destPath, "bfs-metadata.json");
   createFile(bfsMetaPath, metadata);
 
-  console.log("bundle bfsa application done!!!");
+  console.log("bundle jmm application done!!!");
 }
 
 /**
@@ -72,14 +79,29 @@ async function createBfsaMetaData(destPath: string) {
   const bfsMetaPath = await searchMetadata(destPath);
 
   const bfsMetaU8 = await Deno.readTextFile(bfsMetaPath);
-  const bfsMeta:$UserMetadata = JSON.parse(bfsMetaU8)
+  const bfsMeta: $UserMetadata = JSON.parse(bfsMetaU8);
   const bfsUrl = new URL(bfsMeta.home);
 
+  const actualKeys = Object.keys(bfsMeta);
+  let missingKeys = "";
+  if (
+    !expectedKeys.every((key) => {
+      const missing = actualKeys.includes(key);
+      if (!missing) {
+        missingKeys = `${missingKeys} ${key}`;
+      }
+      return missing;
+    })
+  ) {
+    throw new Error(logColors.red(`Not added ${missingKeys} to the bfs-jmm.json file`),{
+      
+    });
+  }
   const _metadata: $BFSMetaData = {
     id: `${bfsMeta.name}.${bfsUrl.host}.dweb`,
     server: {
-      root:"/usr",
-      entry:"/bfs_worker/public.service.worker.js"// 后端未开放先固定
+      root: "/usr",
+      entry: "/bfs_worker/public.service.worker.js", // 后端未开放先固定
     },
     title: bfsMeta.name,
     subtitle: bfsMeta.subName,
@@ -89,7 +111,8 @@ async function createBfsaMetaData(destPath: string) {
     introduction: bfsMeta.introduction,
     author: bfsMeta.author,
     version: bfsMeta.version,
-    keywords: bfsMeta.keywords,
+    newFeature: bfsMeta.newFeature,
+    keywords: bfsMeta.keywords ?? [],
     home: bfsMeta.home,
     size: 0,
     fileHash: "",
@@ -100,23 +123,23 @@ async function createBfsaMetaData(destPath: string) {
 }
 
 /**
- * 适配用户传递bfs-metadata.json的情况
- * @param metaPath bfs-metadata地址
+ * 适配用户传递bfs-jmm.json的情况
+ * @param metaPath bfs-jmm
  * @returns
  */
 async function searchMetadata(destPath: string) {
-  
-  console.log("Project address=>",destPath)
+  console.log("Project address :", destPath);
   // 搜索bfs-link.ts
-  const bfsMetaPath = await searchFile(destPath, /^bfs-link\.json$/i);
+  const bfsMetaPath = await searchFile(destPath, /^bfs-jmm\.json$/i);
   if (bfsMetaPath === "") {
-    const bfsPath = await Input.prompt("没有找到配置文件地址，请输入bfs-link.json配置文件地址：");
-    await catchFunctionType(Deno.stat,bfsPath)
-    return bfsPath
+    const bfsPath = await Input.prompt(
+      "没有找到配置文件地址，请输入bfs-jmm.json配置文件地址："
+    );
+    await catchFunctionType(Deno.stat, bfsPath);
+    return bfsPath;
   }
   return bfsMetaPath;
 }
-
 
 // /**
 //  * 为文件列表生成sha512校验码

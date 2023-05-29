@@ -26,32 +26,21 @@ DwebBrowser 前后端打包工具，把您开发的包打包成`.bfsa`形式。
 ```
  全局安装指令
  # npm方式
-   npm i @bfex/bundle -g
+   npm i @bfex/dweb-jmm-bundler -g
 
  # yarn方式
-   yarn global add @bfex/bundle
+   yarn global add @bfex/dweb-jmm-bundler
 ```
 
 #### 使用
 
-安装完直接运行bfex，开启交互式打包
+安装完直接运行jmm，开启交互式打包
 
-```bfex
-bfex
+```bash
+jmm
 ```
-
 
 ## future
 
 1. 链上 APPID 认证申请。
 2. 上传到 DwebBrowser DAPP 商城。
-
-
-### shims
-
-```ts
-writeSync(p) {
-    process.stdout.write(p);
-    return p.length
-},
-```

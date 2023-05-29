@@ -39,10 +39,10 @@ export const buildOptions: BuildOptions = {
     license: "MIT",
     repository: {
       type: "git",
-      url: "git+https://github.com/BioforestChain/dweb_bundle.git",
+      url: "git+https://github.com/BioforestChain/dweb-jmm-bundler.git",
     },
     bugs: {
-      url: "https://github.com/BioforestChain/dweb_bundle/issues",
+      url: "https://github.com/BioforestChain/dweb-jmm-bundler/issues",
     },
     devDependencies: {
       // "@types/node": "latest",

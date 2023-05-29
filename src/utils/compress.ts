@@ -20,7 +20,7 @@ export async function compressToSuffixesBfsa(dest: string, bfsAppId: string) {
     });
   }
   // use tar.getReader() to read the contents.
-  const bfsaPath = path.resolve(dest, "../", `${bfsAppId}.bfsa`);
+  const bfsaPath = path.resolve(dest, "../", `${bfsAppId}.jmm`);
   const writer = await Deno.open(bfsaPath, {
     write: true,
     create: true,

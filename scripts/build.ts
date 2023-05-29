@@ -7,9 +7,9 @@ const target = [
 ];
 
 target.map(async (os) => {
-  let output = "bfex";
+  let output = "jmm";
   if (os.includes("windows")) {
-    output = "bfex.exe"
+    output = "jmm.exe"
   }
 
   const command = new Deno.Command(

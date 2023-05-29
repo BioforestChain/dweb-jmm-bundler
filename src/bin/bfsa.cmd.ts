@@ -2,7 +2,7 @@ import { Input, Toggle, path } from "../../deps.ts";
 import { bundle } from "../cmd/bundle.ts";
 
 // const program = new Command();
-//TODO 命令行模式 打包application为.bfsa到指定位置
+// TODO 命令行模式 打包application为.bfsa到指定位置
 // program
 //   .command("bfex")
 //   .description(npmConfig.description)

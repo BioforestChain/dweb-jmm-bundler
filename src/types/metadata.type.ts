@@ -14,20 +14,33 @@ export interface $IAppversion {
   errorMsg: string;
 }
 
+// 用户需要填写的内容，即bfs-jmm.json必填的内容
 export interface $UserMetadata {
-  name:string;
-  subName:string; 
+  name: string;
+  subName: string;
   version: string; // 应用版本
   introduction: string; // 应用描述
   author: string[]; // 开发者，作者
   icon: string; // 应用图标
   images: string[]; // 应用截图
-  keywords: string[]; // 关键词
+  newFeature: string; // 新功能
   home: string; // 首页地址
-  downloadUrl:string; // 下载应用地址
+  downloadUrl: string; // 下载应用地址
+  keywords?: string[]; // 关键词
 }
 
-
+export const expectedKeys = [
+  "name",
+  "subName",
+  "version",
+  "introduction",
+  "author",
+  "icon",
+  "images",
+  "newFeature",
+  "home",
+  "downloadUrl",
+];
 
 export interface $BFSMetaData {
   id: $MMID;
@@ -40,6 +53,7 @@ export interface $BFSMetaData {
   introduction: string; // 应用描述
   author: string[]; // 开发者，作者
   version: string; // 应用版本
+  newFeature: string; // 新功能
   keywords: string[]; // 关键词
   home: string; // 首页地址
   size: number; // 应用大小
@@ -58,22 +72,3 @@ interface $MainServer {
    */
   entry: string;
 }
-// {
-//   "data": {
-//     "version": "",
-//     "icon": "",
-//     "name": "",
-//     "files": [
-//       {
-//         "url": "",
-//         "size": 0,
-//         "sha512": ""
-//       }
-//     ],
-//     "releaseNotes": "",
-//     "releaseName": "",
-//     "releaseDate": ""
-//   },
-//   "errorCode": 0,
-//   "errorMsg": "success"
-// }
