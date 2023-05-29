@@ -1,3 +1,4 @@
+import { colors } from "https://deno.land/x/deno_cache@0.4.1/deps.ts";
 import { Input, logColors, path } from "../../deps.ts";
 import {
   $BFSMetaData,
@@ -67,7 +68,7 @@ export async function bundle(options: IProblemConfig) {
   const bfsMetaPath = path.resolve(destPath, "bfs-metadata.json");
   createFile(bfsMetaPath, metadata);
 
-  console.log("bundle jmm application done!!!");
+  console.log(colors.bgRgb24("bundle jmm application done!!!",0x008080));
 }
 
 /**
@@ -128,14 +129,21 @@ async function createBfsaMetaData(destPath: string) {
  * @returns
  */
 async function searchMetadata(destPath: string) {
-  console.log("Project address :", destPath);
+  // console.log("Project address :", colors.green(destPath));
   // 搜索bfs-link.ts
   const bfsMetaPath = await searchFile(destPath, /^bfs-jmm\.json$/i);
   if (bfsMetaPath === "") {
     const bfsPath = await Input.prompt(
-      "没有找到配置文件地址，请输入bfs-jmm.json配置文件地址："
+      colors.bgBlue("The address of the configuration file was not found, please enter the address of the bfs-jmm.json configuration file:")
     );
     await catchFunctionType(Deno.stat, bfsPath);
+    const fileInfo = await Deno.stat(bfsPath);
+    if(fileInfo.isDirectory) {
+      const bfsMetaPath = await searchFile(destPath, /^bfs-jmm\.json$/i);
+      if(bfsMetaPath === "") {
+        throw colors.bgRed(`The configuration file address was not found!`);
+      }
+    }
     return bfsPath;
   }
   return bfsMetaPath;
